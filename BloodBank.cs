@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using UPA_EXTERNAL_MODELS.Models.BloodBanks;
 using UPA_EXTERNAL_MODELS.Models.Lookup;
-using UPAExternalAPI.Models.BloodBanks;
 
 namespace UPA_SDK
 {
