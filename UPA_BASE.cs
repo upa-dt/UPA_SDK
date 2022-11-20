@@ -16,6 +16,7 @@ namespace UPA_SDK
 {
     public abstract class UPA_BASE
     {
+        const int MaxTrialcount = 10;
         public string API_SECRET { get; }
         public int SERVER_OTP_VALIDATION_WINDOW { get; }
         public int MIN_TIME_BETWEEN_API_CALLS { get; }
@@ -74,17 +75,58 @@ namespace UPA_SDK
 
         public ResponseContainer<T> JSON_POST<T>(string ServiceURL, object outPayload)
         {
+            int c = 0;
+            while (c < MaxTrialcount)
+            {
+                try
+                {
+                    return InnerPost<T>(ServiceURL, outPayload);
+                }
+                catch (Exception ex)
+                {
+                    //Maybe Token Expired so lets try Login Again
+                    Console.WriteLine($"********* Maybe Token Expired so lets try Login Again Trial ({c}) ***********");
+                    this.Login();
+                    c++;
+                }
+            }
+            throw new Exception($"Too Many Post Trials {MaxTrialcount}");
+        }
+
+        private ResponseContainer<T> InnerPost<T>(string ServiceURL, object outPayload)
+        {
             HttpClient client = GetClientPrepared();
             var p = client.PostAsJsonAsync(
                 $"{this.API_ROOT_URL}{ServiceURL}", outPayload);
             p.Wait();
             return Introduce_Result<T>(p);
         }
+
         /// <summary>
         /// Get URL Of The Service Formated with any Parameters
         /// </summary>
         /// <param name="ServiceGetURL"></param>
         public ResponseContainer<T> JSON_Get<T>(string ServiceGetURL)
+        {
+            int c = 0;
+            while (c < MaxTrialcount)
+            {
+                try
+                {
+                    return Inner_Get<T>(ServiceGetURL);
+                }
+                catch (Exception ex)
+                {
+                    //Maybe Token Expired so lets try Login Again
+                    Console.WriteLine($"********* Maybe Token Expired so lets try Login Again Trial ({c}) ***********");
+                    this.Login();
+                    c++;
+                }
+            }
+            throw new Exception($"Too Many Post Trials {MaxTrialcount}");
+        }
+
+        private ResponseContainer<T> Inner_Get<T>(string ServiceGetURL)
         {
             HttpClient client = GetClientPrepared();
             var p = client.GetAsync($"{this.API_ROOT_URL}{ServiceGetURL}",
@@ -93,6 +135,7 @@ namespace UPA_SDK
             //Console.WriteLine(p.Result);
             return Introduce_Result<T>(p);
         }
+
         /// <summary>
         /// Download PDF From Server
         /// </summary>
