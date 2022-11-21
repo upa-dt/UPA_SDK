@@ -16,6 +16,14 @@ namespace UPA_SDK
 {
     public abstract class UPA_BASE
     {
+        /// <summary>
+        /// This event Will Fire after Trials Expire
+        /// </summary>
+        public static event Action ConnectionTimeOutMaxTrials;
+        /// <summary>
+        /// Maximum Number trying to reconnect before firing ConnectionTimeOutMaxTrials
+        /// You Can Change this value
+        /// </summary>
         const int MaxTrialcount = 10;
         public string API_SECRET { get; }
         public int SERVER_OTP_VALIDATION_WINDOW { get; }
@@ -66,11 +74,26 @@ namespace UPA_SDK
 
         public ResponseContainer<T> Form_POST<T>(string ServiceURL, MultipartFormDataContent outPayload)
         {
-            HttpClient client = GetClientPrepared();
-            var p = client.PostAsync(
-                $"{this.API_ROOT_URL}{ServiceURL}", outPayload);
-            p.Wait();
-            return Introduce_Result<T>(p);
+            int c = 0;
+            while (c < MaxTrialcount)
+            {
+                try
+                {
+                    HttpClient client = GetClientPrepared();
+                    var p = client.PostAsync(
+                        $"{this.API_ROOT_URL}{ServiceURL}", outPayload);
+                    p.Wait();
+                    return Introduce_Result<T>(p);
+                }
+                catch (Exception ex)
+                {
+                    // You May Inspect exception here 
+                    //Maybe Token Expired so lets try Login Again
+                    RecoverConnection(ref c);
+                }
+            }
+            UPA_BASE.ConnectionTimeOutMaxTrials?.Invoke();
+            throw new Exception($"Too Many Post Trials {MaxTrialcount}");
         }
 
         public ResponseContainer<T> JSON_POST<T>(string ServiceURL, object outPayload)
@@ -80,26 +103,29 @@ namespace UPA_SDK
             {
                 try
                 {
-                    return InnerPost<T>(ServiceURL, outPayload);
+                    HttpClient client = GetClientPrepared();
+                    var p = client.PostAsJsonAsync($"{this.API_ROOT_URL}{ServiceURL}", outPayload);
+                    p.Wait();
+                    return Introduce_Result<T>(p);
                 }
                 catch (Exception ex)
                 {
+                    // You May Inspect exception here 
                     //Maybe Token Expired so lets try Login Again
-                    Console.WriteLine($"********* Maybe Token Expired so lets try Login Again Trial ({c}) ***********");
-                    this.Login();
-                    c++;
+                    RecoverConnection(ref c);
                 }
             }
+            UPA_BASE.ConnectionTimeOutMaxTrials?.Invoke();
             throw new Exception($"Too Many Post Trials {MaxTrialcount}");
         }
 
-        private ResponseContainer<T> InnerPost<T>(string ServiceURL, object outPayload)
+        private void RecoverConnection(ref int c)
         {
-            HttpClient client = GetClientPrepared();
-            var p = client.PostAsJsonAsync(
-                $"{this.API_ROOT_URL}{ServiceURL}", outPayload);
-            p.Wait();
-            return Introduce_Result<T>(p);
+            //Wait Random Time from 100 Milliseconds to 2 Seconds Maybe temporary connection problem
+            Thread.Sleep(new Random().Next(100, 2000));
+            Console.WriteLine($"********* Maybe Token Expired so lets try Login Again Trial ({c}) ***********");
+            this.Login();
+            c++;
         }
 
         /// <summary>
@@ -113,27 +139,21 @@ namespace UPA_SDK
             {
                 try
                 {
-                    return Inner_Get<T>(ServiceGetURL);
+                    HttpClient client = GetClientPrepared();
+                    var p = client.GetAsync($"{this.API_ROOT_URL}{ServiceGetURL}",
+                        HttpCompletionOption.ResponseContentRead);
+                    p.Wait();
+                    return Introduce_Result<T>(p);
                 }
                 catch (Exception ex)
                 {
+                    // You May Inspect exception here 
                     //Maybe Token Expired so lets try Login Again
-                    Console.WriteLine($"********* Maybe Token Expired so lets try Login Again Trial ({c}) ***********");
-                    this.Login();
-                    c++;
+                    RecoverConnection(ref c);
                 }
             }
+            UPA_BASE.ConnectionTimeOutMaxTrials?.Invoke();
             throw new Exception($"Too Many Post Trials {MaxTrialcount}");
-        }
-
-        private ResponseContainer<T> Inner_Get<T>(string ServiceGetURL)
-        {
-            HttpClient client = GetClientPrepared();
-            var p = client.GetAsync($"{this.API_ROOT_URL}{ServiceGetURL}",
-                HttpCompletionOption.ResponseContentRead);
-            p.Wait();
-            //Console.WriteLine(p.Result);
-            return Introduce_Result<T>(p);
         }
 
         /// <summary>
@@ -142,18 +162,25 @@ namespace UPA_SDK
         /// <param name="ServiceGetURL"></param>
         public Stream JSON_Download(string ServiceGetURL)
         {
-            try
+            int c = 0;
+            while (c < MaxTrialcount)
             {
-                HttpClient client = GetClientPrepared();
-                var p = client.GetStreamAsync($"{this.API_ROOT_URL}{ServiceGetURL}");
-                p.Wait();
-                return p.Result;
+                try
+                {
+                    HttpClient client = GetClientPrepared();
+                    var p = client.GetStreamAsync($"{this.API_ROOT_URL}{ServiceGetURL}");
+                    p.Wait();
+                    return p.Result;
+                }
+                catch (Exception ex)
+                {
+                    // You May Inspect exception here 
+                    //Maybe Token Expired so lets try Login Again
+                    RecoverConnection(ref c);
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return null;
-            }
+            UPA_BASE.ConnectionTimeOutMaxTrials?.Invoke();
+            throw new Exception($"Too Many Post Trials {MaxTrialcount}");
         }
         private static ResponseContainer<T> Introduce_Result<T>(Task<HttpResponseMessage> p)
         {
