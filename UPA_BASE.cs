@@ -112,6 +112,7 @@ namespace UPA_SDK
                 {
                     // You May Inspect exception here 
                     //Maybe Token Expired so lets try Login Again
+                    Console.WriteLine(ex.ToString());
                     RecoverConnection(ref c);
                 }
             }
@@ -149,6 +150,7 @@ namespace UPA_SDK
                 {
                     // You May Inspect exception here 
                     //Maybe Token Expired so lets try Login Again
+                    Console.WriteLine(ex.ToString());
                     RecoverConnection(ref c);
                 }
             }
