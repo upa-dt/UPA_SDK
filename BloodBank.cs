@@ -72,6 +72,22 @@ namespace UPA_SDK
         {
             return base.JSON_POST<int>("/BloodBank/registerDonor", model);
         }
+
+        /// <summary>
+        /// Add Donor Blood Info (Group+Rh) after receiving him 
+        /// </summary>
+        /// <param name="model">
+        /// Donor Blood Information Data
+        /// </param>
+        /// <returns>
+        /// Status of Adding Blood Information
+        /// </returns>
+        public ResponseContainer<int> RegisterDonorBloodInfo(RegisterDonorBloodInfoModel model)
+        {
+            return base.JSON_POST<int>("/BloodBank/registerDonorBloodInfo", model);
+        }
+
+
         public ResponseContainer<DonorSearchResult> GetDonor(DonorSearchModel model)
         {
             return base.JSON_POST<DonorSearchResult>("/BloodBank/getDonor", model);
