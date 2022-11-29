@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UPA_EXTERNAL_MODELS;
 using UPA_EXTERNAL_MODELS.Models.BloodBanks;
 using UPA_EXTERNAL_MODELS.Models.Lookup;
 
@@ -38,6 +39,10 @@ namespace UPA_SDK
         {
             return base.JSON_Get<List<LookupBase>>("/BloodBank/getBloodRh");
         }
+        public ResponseContainer<List<LookupBase>> GetBloodPhenotype()
+        {
+            return base.JSON_Get<List<LookupBase>>("/BloodBank/getBloodPhenotypes");
+        }
         public ResponseContainer<List<LookupBase>> GetProfessions()
         {
             return base.JSON_Get<List<LookupBase>>("/BloodBank/getProfessions");
@@ -62,9 +67,22 @@ namespace UPA_SDK
         {
             return base.JSON_Get<List<DistrictLookup>>("/BloodBank/getDestricts");
         }
+
+        /// <summary>
+        /// Add New Patient Data
+        /// If Patient Already Exists (even if it was a donor before), His Info Will Be Updated
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public ResponseContainer<int> RegisterPatient(RegisterPatientModel model)
+        {
+            return base.JSON_POST<int>("/BloodBank/registerPatient", model);
+        }
+
+
         /// <summary>
         /// Add New Donor Data
-        /// If Donor Already Exists, His Info Will Be Updated
+        /// If Donor Already Exists (even if it was a Patient before), His Info Will Be Updated
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -87,10 +105,11 @@ namespace UPA_SDK
             return base.JSON_POST<int>("/BloodBank/registerDonorBloodInfo", model);
         }
 
-
         public ResponseContainer<DonorSearchResult> GetDonor(DonorSearchModel model)
         {
-            return base.JSON_POST<DonorSearchResult>("/BloodBank/getDonor", model);
+            var x = base.JSON_POST<DonorSearchResult>("/BloodBank/getDonor", model);
+            x.SerializeObject().ToFile("getDonor.json");
+            return x;
         }
 
         public ResponseContainer<int> RegisterDefer(DeferralModel model)
